@@ -1,0 +1,28 @@
+{
+  "task": "type",
+  "split": "standard",
+  "source": "Modal H100",
+  "timestamp": "2026-03-22",
+  "runs": {
+    "cnn1d_type_baseline": {
+      "config": "configs/base.yaml",
+      "best_epoch": 18,
+      "best_val_macro_f1": 0.7985177494060742,
+      "test_accuracy": 0.7917625402669121,
+      "test_macro_f1": 0.7898648763083391,
+      "test_loss": 0.45594603624203434,
+      "artifact_model": "outputs_modal/cnn1d_type_baseline/best_model.pt",
+      "artifact_summary": "outputs_modal/cnn1d_type_baseline/summary.json"
+    },
+    "cnn_bilstm_type_baseline": {
+      "config": "configs/model_cnn_bilstm.yaml",
+      "best_epoch": 19,
+      "best_val_macro_f1": 0.9352656260829566,
+      "test_accuracy": 0.9397146801656696,
+      "test_macro_f1": 0.9372697166611428,
+      "test_loss": 0.15441798292241007,
+      "artifact_model": "outputs_modal/cnn_bilstm_type_baseline/best_model.pt",
+      "artifact_summary": "outputs_modal/cnn_bilstm_type_baseline/summary.json"
+    }
+  }
+}

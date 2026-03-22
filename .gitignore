@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Outputs
+outputs/
+logs/
+artifacts/
+
+# Data
+data/*.pkl
+data/*.csv
+!data/README.md
+
+# OS
+.DS_Store
+
+plan.md
+readme.md

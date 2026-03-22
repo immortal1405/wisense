@@ -1,0 +1,35 @@
+seed: 42
+
+data:
+  dataset_path: data/dataset_normalized.pkl
+  target: type
+  include_configuration: false
+
+split:
+  mode: day
+  train_day: "1"
+  test_day: "2"
+  val_size: 0.15
+  random_state: 42
+  stratify_cols:
+    - type
+
+train:
+  batch_size: 256
+  num_workers: 0
+  epochs: 20
+  lr: 0.001
+  weight_decay: 0.0001
+  early_stopping_patience: 8
+
+model:
+  name: cnn_bilstm
+  in_channels: 2
+  conv_channels: 64
+  lstm_hidden_dim: 64
+  lstm_layers: 1
+  dropout: 0.2
+
+logging:
+  output_dir: outputs
+  run_name: cnn_bilstm_type_day_shift

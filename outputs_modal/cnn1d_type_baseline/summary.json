@@ -1,0 +1,21 @@
+{
+  "config_path": "/root/wisense/configs/base.yaml",
+  "device": "cuda",
+  "seed": 42,
+  "split_sizes": {
+    "train": 20281,
+    "val": 4346,
+    "test": 4346
+  },
+  "labels": [
+    "organic",
+    "metalic"
+  ],
+  "best_epoch": 18,
+  "best_score": 0.7985177494060742,
+  "test": {
+    "accuracy": 0.7917625402669121,
+    "macro_f1": 0.7898648763083391,
+    "loss": 0.45594603624203434
+  }
+}

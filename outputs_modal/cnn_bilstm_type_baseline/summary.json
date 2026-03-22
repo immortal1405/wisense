@@ -1,0 +1,21 @@
+{
+  "config_path": "/root/wisense/configs/model_cnn_bilstm.yaml",
+  "device": "cuda",
+  "seed": 42,
+  "split_sizes": {
+    "train": 20281,
+    "val": 4346,
+    "test": 4346
+  },
+  "labels": [
+    "organic",
+    "metalic"
+  ],
+  "best_epoch": 19,
+  "best_score": 0.9352656260829566,
+  "test": {
+    "accuracy": 0.9397146801656696,
+    "macro_f1": 0.9372697166611428,
+    "loss": 0.15441798292241007
+  }
+}
