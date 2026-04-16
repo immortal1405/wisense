@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, ExecFileSyncOptions } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -58,30 +58,63 @@ export class ShowcaseService {
     };
   }
 
-  runInference(model: string, mode: string, count: number, body: Record<string, unknown>) {
+  runInference(task: string, mode: string, body: Record<string, unknown>) {
     const venvPython = resolve(this.root, '.venv', 'bin', 'python');
     const pythonBin = existsSync(venvPython) ? venvPython : 'python3';
 
-    const payload = {
-      amp: body.amp,
-      phase: body.phase,
-      csv_text: body.csv_text,
-      base_index: body.base_index,
-      noise: body.noise,
-      phase_offset: body.phase_offset,
-      attenuation: body.attenuation,
-    };
+    // Material classification task
+    if (task === 'material' || !task) {
+      const model = (body.model ?? 'cnn_bilstm') as string;
+      const count = (body.count ?? 8) as number;
+      const countStr = String(count);
+      const payload = {
+        amp: body.amp,
+        phase: body.phase,
+        csv_text: body.csv_text,
+        base_index: body.base_index,
+        noise: body.noise,
+        phase_offset: body.phase_offset,
+        attenuation: body.attenuation,
+      };
 
-    const output = execFileSync(
-      pythonBin,
-      ['-m', 'src.training.infer_api', '--model', model, '--mode', mode, '--count', String(count), '--json-stdin'],
-      {
-        cwd: this.root,
-        encoding: 'utf-8',
-        input: JSON.stringify(payload),
-      },
-    );
+      const output = execFileSync(
+        pythonBin,
+        ['-m', 'src.training.infer_api', '--model', model, '--mode', mode, '--count', countStr, '--json-stdin'],
+        {
+          cwd: this.root,
+          encoding: 'utf-8',
+          input: JSON.stringify(payload),
+        } as ExecFileSyncOptions & { encoding: 'utf-8'; input: string },
+      );
+      return JSON.parse(output);
+    }
 
-    return JSON.parse(output);
+    // Fall detection task
+    if (task === 'fall') {
+      const count = (body.count ?? 8) as number;
+      const countStr = String(count);
+      const payload = {
+        count,
+        base_index: body.base_index,
+        noise_std: body.noise_std,
+        phase_offset: body.phase_offset,
+        attenuation: body.attenuation,
+        channel_dropout: body.channel_dropout,
+        temporal_jitter: body.temporal_jitter,
+      };
+
+      const output = execFileSync(
+        pythonBin,
+        ['-m', 'src.training.infer_har_fall_api', '--mode', mode, '--count', countStr, '--json-stdin'],
+        {
+          cwd: this.root,
+          encoding: 'utf-8',
+          input: JSON.stringify(payload),
+        } as ExecFileSyncOptions & { encoding: 'utf-8'; input: string },
+      );
+      return JSON.parse(output);
+    }
+
+    throw new Error(`Unknown task: ${task}`);
   }
 }

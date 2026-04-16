@@ -1,0 +1,62 @@
+seed: 42
+
+data:
+  task: har_activity_multiclass
+  root_dir: data/v38wjmz6f6-1
+  # Use experiment+activity composite labels to avoid collisions where activity IDs repeat across experiments.
+  label_mode: experiment_activity
+  # null means include all activities discovered in dataset.
+  activity_ids: null
+  window_size: 256
+  stride: 128
+  min_packets: 64
+  feature_mode: amp_log_sincos
+  phase_unwrap: true
+  phase_centering: true
+  subcarrier_count: 30
+  motion_detrend: true
+  temporal_diff: true
+  packet_step: 2
+  max_windows_per_trial: 12
+  max_windows_sampling_mode: random
+  short_sequence_pad_mode: reflect
+  preprocess_workers: 8
+  balanced_sampling: true
+  use_cache: true
+  cache_dir: /artifacts/har_cache
+  max_files: null
+
+split:
+  mode: environment
+  train_envs: [1, 2]
+  val_envs: []
+  test_envs: [3]
+  val_subject_fraction: 0.2
+  seed: 42
+
+model:
+  name: cnn_bilstm_attention
+  in_channels: 270
+  conv_channels: 128
+  lstm_hidden_dim: 128
+  lstm_layers: 1
+  attention_heads: 4
+  dropout: 0.3
+
+loss:
+  name: focal
+  focal_gamma: 2.0
+  class_weighting: false
+  disable_class_weight_when_balanced_sampling: true
+
+train:
+  batch_size: 64
+  num_workers: 0
+  epochs: 20
+  lr: 0.001
+  weight_decay: 0.0001
+  early_stopping_patience: 5
+
+logging:
+  output_dir: outputs
+  run_name: har_activity_phase2_expact

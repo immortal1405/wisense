@@ -41,14 +41,20 @@ image = (
     timeout=60 * 60,
     volumes={ARTIFACT_ROOT: artifacts_volume},
 )
-def train(config_name: str = "base.yaml", epochs: int = 20, max_batches: int = 0) -> None:
+def train(
+    config_name: str = "base.yaml",
+    module_name: str = "src.training.train",
+    epochs: int = 20,
+    max_batches: int = 0,
+) -> None:
     project_dir = Path(REMOTE_ROOT)
     config_path = project_dir / "configs" / config_name
 
     cmd = [
         "python",
+        "-u",
         "-m",
-        "src.training.train",
+        module_name,
         "--config",
         str(config_path),
         "--epochs",
@@ -87,6 +93,7 @@ def list_saved_runs() -> list[str]:
 def main(
     action: str = "train",
     config_name: str = "base.yaml",
+    module_name: str = "src.training.train",
     epochs: int = 20,
     max_batches: int = 0,
     run_name: str = "",
@@ -94,7 +101,12 @@ def main(
     local_dir: str = "outputs_modal",
 ) -> None:
     if action == "train":
-        train.remote(config_name=config_name, epochs=epochs, max_batches=max_batches)
+        train.remote(
+            config_name=config_name,
+            module_name=module_name,
+            epochs=epochs,
+            max_batches=max_batches,
+        )
         return
 
     if action == "list":

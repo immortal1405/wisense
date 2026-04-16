@@ -1,0 +1,50 @@
+seed: 42
+
+data:
+  root_dir: data/v38wjmz6f6-1
+  positive_activities: [2, 5]
+  window_size: 256
+  stride: 128
+  min_packets: 64
+  feature_mode: amp_log_sincos
+  packet_step: 2
+  max_windows_per_trial: 8
+  preprocess_workers: 8
+  use_cache: true
+  cache_dir: /artifacts/har_cache
+  # Set to a small integer for quick smoke checks, null for full dataset.
+  max_files: null
+
+split:
+  # Recommended first benchmark: train on Env 1+2, test on unseen Env 3.
+  mode: environment
+  train_envs: [1, 2]
+  val_envs: []
+  test_envs: [3]
+  val_subject_fraction: 0.2
+
+model:
+  name: cnn_bilstm_attention
+  in_channels: 270
+  conv_channels: 128
+  lstm_hidden_dim: 128
+  lstm_layers: 1
+  attention_heads: 4
+  dropout: 0.3
+
+loss:
+  name: focal
+  focal_gamma: 1.5
+  class_weighting: true
+
+train:
+  batch_size: 64
+  num_workers: 0
+  epochs: 20
+  lr: 0.001
+  weight_decay: 0.0001
+  early_stopping_patience: 5
+
+logging:
+  output_dir: outputs
+  run_name: har_fall_phase1_g15

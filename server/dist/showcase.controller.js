@@ -26,10 +26,9 @@ let ShowcaseController = class ShowcaseController {
         return this.showcaseService.getResultsBundle();
     }
     inference(body) {
-        const model = body?.model ?? 'cnn_bilstm';
-        const mode = body?.mode ?? 'random';
-        const count = body?.count ?? 8;
-        return this.showcaseService.runInference(model, mode, count, body ?? {});
+        const task = body?.task ?? 'material';
+        const mode = body?.mode ?? (task === 'fall' ? 'random_replay' : 'random');
+        return this.showcaseService.runInference(task, mode, body ?? {});
     }
 };
 exports.ShowcaseController = ShowcaseController;

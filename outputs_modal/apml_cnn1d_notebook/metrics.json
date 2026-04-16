@@ -1,0 +1,57 @@
+{
+  "best_epoch": 1,
+  "best_val_macro_f1": 1.0,
+  "test": {
+    "accuracy": 0.9629629629629629,
+    "macro_f1": 0.9628482972136222,
+    "loss": 0.4062657864005477
+  },
+  "label_encoding": {
+    "classes": [
+      "squat",
+      "arm_jerk",
+      "stationary_walk"
+    ],
+    "to_index": {
+      "squat": 0,
+      "arm_jerk": 1,
+      "stationary_walk": 2
+    }
+  },
+  "input_shape": {
+    "channels": 504,
+    "seq_len": 180
+  },
+  "raw_slices": {
+    "train": [
+      [
+        3100,
+        10000
+      ],
+      [
+        13300,
+        20000
+      ],
+      [
+        23000,
+        30200
+      ]
+    ],
+    "test": [
+      [
+        3100,
+        6300
+      ],
+      [
+        10000,
+        13300
+      ],
+      [
+        16100,
+        19200
+      ]
+    ],
+    "window_size": 180
+  },
+  "note": "Exact notebook-style APML slice pipeline."
+}

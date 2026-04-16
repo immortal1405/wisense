@@ -60,24 +60,49 @@ let ShowcaseService = class ShowcaseService {
             },
         };
     }
-    runInference(model, mode, count, body) {
+    runInference(task, mode, body) {
         const venvPython = (0, node_path_1.resolve)(this.root, '.venv', 'bin', 'python');
         const pythonBin = (0, node_fs_1.existsSync)(venvPython) ? venvPython : 'python3';
-        const payload = {
-            amp: body.amp,
-            phase: body.phase,
-            csv_text: body.csv_text,
-            base_index: body.base_index,
-            noise: body.noise,
-            phase_offset: body.phase_offset,
-            attenuation: body.attenuation,
-        };
-        const output = (0, node_child_process_1.execFileSync)(pythonBin, ['-m', 'src.training.infer_api', '--model', model, '--mode', mode, '--count', String(count), '--json-stdin'], {
-            cwd: this.root,
-            encoding: 'utf-8',
-            input: JSON.stringify(payload),
-        });
-        return JSON.parse(output);
+        if (task === 'material' || !task) {
+            const model = (body.model ?? 'cnn_bilstm');
+            const count = (body.count ?? 8);
+            const countStr = String(count);
+            const payload = {
+                amp: body.amp,
+                phase: body.phase,
+                csv_text: body.csv_text,
+                base_index: body.base_index,
+                noise: body.noise,
+                phase_offset: body.phase_offset,
+                attenuation: body.attenuation,
+            };
+            const output = (0, node_child_process_1.execFileSync)(pythonBin, ['-m', 'src.training.infer_api', '--model', model, '--mode', mode, '--count', countStr, '--json-stdin'], {
+                cwd: this.root,
+                encoding: 'utf-8',
+                input: JSON.stringify(payload),
+            });
+            return JSON.parse(output);
+        }
+        if (task === 'fall') {
+            const count = (body.count ?? 8);
+            const countStr = String(count);
+            const payload = {
+                count,
+                base_index: body.base_index,
+                noise_std: body.noise_std,
+                phase_offset: body.phase_offset,
+                attenuation: body.attenuation,
+                channel_dropout: body.channel_dropout,
+                temporal_jitter: body.temporal_jitter,
+            };
+            const output = (0, node_child_process_1.execFileSync)(pythonBin, ['-m', 'src.training.infer_har_fall_api', '--mode', mode, '--count', countStr, '--json-stdin'], {
+                cwd: this.root,
+                encoding: 'utf-8',
+                input: JSON.stringify(payload),
+            });
+            return JSON.parse(output);
+        }
+        throw new Error(`Unknown task: ${task}`);
     }
 };
 exports.ShowcaseService = ShowcaseService;

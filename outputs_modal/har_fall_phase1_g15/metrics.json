@@ -1,0 +1,58 @@
+{
+  "best_epoch": 4,
+  "best_val_macro_f1": 0.5904653996400939,
+  "best_threshold": 0.55,
+  "test": {
+    "accuracy": 0.759825327510917,
+    "macro_f1": 0.5562795688848226,
+    "precision_pos": 0.2152619589977221,
+    "recall_pos": 0.315,
+    "loss": 0.34457298346865073
+  },
+  "test_thresholded": {
+    "accuracy": 0.8022925764192139,
+    "macro_f1": 0.5591002751350831,
+    "precision_pos": 0.23595505617977527,
+    "recall_pos": 0.2275
+  },
+  "input_shape": {
+    "channels": 270,
+    "seq_len": 256
+  },
+  "label_encoding": {
+    "classes": [
+      "non_fall",
+      "fall"
+    ],
+    "to_index": {
+      "non_fall": 0,
+      "fall": 1
+    }
+  },
+  "dataset": {
+    "split_mode": "environment",
+    "feature_mode": "amp_log_sincos",
+    "packet_step": 2,
+    "max_windows_per_trial": 8,
+    "num_trials_total": 9000,
+    "num_trials_train": 4800,
+    "num_trials_val": 1200,
+    "num_trials_test": 3000,
+    "num_windows_train": 14823,
+    "num_windows_val": 3596,
+    "num_windows_test": 9160,
+    "label_counts_train": {
+      "non_fall": 12866,
+      "fall": 1957
+    },
+    "label_counts_val": {
+      "non_fall": 3116,
+      "fall": 480
+    },
+    "label_counts_test": {
+      "non_fall": 7960,
+      "fall": 1200
+    }
+  },
+  "note": "Phase 1 binary fall detector with train-only per-feature normalization."
+}

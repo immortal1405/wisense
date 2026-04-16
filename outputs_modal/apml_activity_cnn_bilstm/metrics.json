@@ -1,0 +1,28 @@
+{
+  "best_epoch": 20,
+  "best_val_macro_f1": 0.8329728265539917,
+  "test": {
+    "accuracy": 0.45503217931646694,
+    "macro_f1": 0.4213655268768524,
+    "loss": 1.797640630299919
+  },
+  "label_encoding": {
+    "classes": [
+      "still",
+      "squat",
+      "arm_jerk",
+      "stationary_walk"
+    ],
+    "to_index": {
+      "still": 0,
+      "squat": 1,
+      "arm_jerk": 2,
+      "stationary_walk": 3
+    }
+  },
+  "input_shape": {
+    "channels": 9,
+    "seq_len": 56
+  },
+  "note": "APML labels are generated from configured segment sequence/ratios."
+}

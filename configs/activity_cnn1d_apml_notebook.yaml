@@ -1,0 +1,44 @@
+seed: 42
+
+data:
+  train_path: data/data_apml.json
+  test_path: data/data_apml_min.json
+  window_size: 180
+  train_ranges:
+    - [3100, 10000]
+    - [13300, 20000]
+    - [23000, 30200]
+  test_ranges:
+    - [3100, 6300]
+    - [10000, 13300]
+    - [16100, 19200]
+
+activity:
+  class_order:
+    - squat
+    - arm_jerk
+    - stationary_walk
+
+split:
+  val_size: 0.2
+  random_state: 42
+
+train:
+  batch_size: 16
+  num_workers: 0
+  epochs: 50
+  lr: 0.001
+  weight_decay: 0.0
+  early_stopping_patience: 10
+
+model:
+  name: apml_cnn1d
+  in_channels: 504
+  seq_len: 180
+
+loss:
+  class_weighting: false
+
+logging:
+  output_dir: outputs
+  run_name: apml_cnn1d_notebook

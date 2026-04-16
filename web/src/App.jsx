@@ -7,7 +7,9 @@ const tabs = [
   { key: 'guide', label: 'Project Guide' },
   { key: 'results', label: 'Results' },
   { key: 'pipeline', label: 'Pipeline' },
+  { key: 'fall_pipeline', label: 'Fall Pipeline' },
   { key: 'inference', label: 'Inference Lab' },
+  { key: 'fall_detection', label: 'Fall Detection' },
 ];
 
 function MetricCard({ title, value, subtitle }) {
@@ -58,6 +60,19 @@ function App() {
   const [inference, setInference] = useState(null);
   const [inferError, setInferError] = useState('');
   const [lastRunContext, setLastRunContext] = useState({ mode: null, csvPreset: null });
+  
+  // Fall detection states
+  const [fallInferenceLoading, setFallInferenceLoading] = useState(false);
+  const [fallInference, setFallInference] = useState(null);
+  const [fallInferError, setFallInferError] = useState('');
+  const [fallInferMode, setFallInferMode] = useState('random_replay');
+  const [fallInferCount, setFallInferCount] = useState('5');
+  const [fallBaseIndex, setFallBaseIndex] = useState('0');
+  const [fallNoise, setFallNoise] = useState('0.03');
+  const [fallPhaseOffset, setFallPhaseOffset] = useState('0.02');
+  const [fallAttenuation, setFallAttenuation] = useState('0.1');
+  const [fallChannelDropout, setFallChannelDropout] = useState('0.05');
+  const [fallTemporalJitter, setFallTemporalJitter] = useState('0');
 
   useEffect(() => {
     fetch(`${API}/results`)
@@ -171,6 +186,42 @@ function App() {
     }
   };
 
+  const runFallInference = async () => {
+    setFallInferenceLoading(true);
+    setFallInferError('');
+    try {
+      const body = { task: 'fall', mode: fallInferMode };
+      
+      if (fallInferMode === 'random_replay') {
+        body.count = Math.max(1, Math.min(20, Number.parseInt(fallInferCount || '5', 10) || 5));
+      } else if (fallInferMode === 'simulate') {
+        body.base_index = Number.parseInt(fallBaseIndex || '0', 10) || 0;
+        body.noise_std = Number.parseFloat(fallNoise || '0.03') || 0.03;
+        body.phase_offset = Number.parseFloat(fallPhaseOffset || '0.02') || 0.02;
+        body.attenuation = Number.parseFloat(fallAttenuation || '0.1') || 0.1;
+        body.channel_dropout = Number.parseFloat(fallChannelDropout || '0.05') || 0.05;
+        body.temporal_jitter = Number.parseInt(fallTemporalJitter || '0', 10) || 0;
+      }
+
+      const res = await fetch(`${API}/inference`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || 'Fall detection inference failed');
+      }
+      const data = await res.json();
+      setFallInference(data);
+    } catch (err) {
+      setFallInference(null);
+      setFallInferError(err.message || 'Fall detection inference failed');
+    } finally {
+      setFallInferenceLoading(false);
+    }
+  };
+
   if (loading) return <div className="shell">Loading showcase...</div>;
 
   return (
@@ -225,8 +276,16 @@ function App() {
                 deterministic splitting, training, evaluation, and artifact export.
               </li>
               <li>
+                Binary fall-detection extension with alert-oriented inference, including random replay and
+                perturbation simulation modes for robustness checks.
+              </li>
+              <li>
                 Two-model comparison framework: CNN1D as a compact baseline and CNN-BiLSTM as a sequence-aware
                 improved model.
+              </li>
+              <li>
+                Multi-class HAR experimentation with environment-aware evaluation to analyze LOS to NLOS
+                generalization limits.
               </li>
               <li>
                 Reproducible experiment execution on Modal H100 with locally retrievable checkpoints and summaries.
@@ -246,8 +305,15 @@ function App() {
                 Wi-Fi CSI can be used as a contactless sensing signal to infer material class from channel response.
               </li>
               <li>
+                The same CSI stack can drive a binary safety task (fall versus non-fall) with thresholded alert output.
+              </li>
+              <li>
                 CNN-BiLSTM consistently outperforms CNN1D in standard evaluation, indicating value from sequential
                 context across subcarriers.
+              </li>
+              <li>
+                Multi-class activity recognition is significantly harder under LOS-to-NLOS transfer because motion
+                classes overlap and domain shift is stronger.
               </li>
               <li>
                 Day-shift testing reveals domain shift: environmental and temporal changes alter CSI distributions and
@@ -269,6 +335,14 @@ function App() {
             </ul>
             <h3>Limitations and Next Steps</h3>
             <ul>
+              <li>
+                Multi-class HAR remains the hardest setting in this project due to class overlap, class imbalance,
+                and environment shift; further ablation is still required.
+              </li>
+              <li>
+                Fall detection must optimize for high recall and low missed-fall rate, which can conflict with raw
+                accuracy and requires careful threshold tuning.
+              </li>
               {(bundle?.limitations ?? []).map((line, idx) => (
                 <li key={`limit-${idx}`}>{line}</li>
               ))}
@@ -377,10 +451,26 @@ function App() {
                 </p>
               </article>
               <article>
+                <h3>How Fall Detection Fits In</h3>
+                <p>
+                  Fall detection uses the same CSI sensing principle but a different objective: binary event detection
+                  (fall / non-fall) with an alert threshold. This is a safety-driven mode where missing a true fall is
+                  costlier than issuing an occasional false alarm.
+                </p>
+              </article>
+              <article>
                 <h3>What One Row Means</h3>
                 <p>
                   One row represents one CSI snapshot under a specific environment/object condition. In this project, the
                   row is converted into a 2 x 52 tensor (amplitude channel + phase channel) and passed to the model.
+                </p>
+              </article>
+              <article>
+                <h3>Multi-class Activity Work and Current Issues</h3>
+                <p>
+                  Beyond binary tasks, we also trained multi-class activity models on HAR data. This setting is much
+                  harder because multiple activities share similar CSI signatures, the class distribution is uneven,
+                  and LOS-to-NLOS transfer introduces strong domain shift that lowers out-of-domain macro-F1.
                 </p>
               </article>
               <article>
@@ -431,6 +521,9 @@ function App() {
                 </li>
                 <li>
                   Scenario Simulator: starts from a known row and applies controlled perturbations, then re-predicts.
+                </li>
+                <li>
+                  Fall Detection Lab: runs binary fall replay/simulation and returns alert flags with fall-recall focused metrics.
                 </li>
               </ul>
             </div>
@@ -499,6 +592,14 @@ function App() {
                 </li>
                 <li>
                   Confidence behavior under simulation indicates robustness (or fragility) to channel perturbations.
+                </li>
+                <li>
+                  Multi-class HAR results show the key unresolved challenge: good in-domain learning does not yet
+                  translate to strong LOS-to-NLOS generalization.
+                </li>
+                <li>
+                  Fall detection adds a safety perspective, where recall and missed-event risk matter as much as
+                  overall accuracy.
                 </li>
               </ul>
             </div>
@@ -608,6 +709,130 @@ function App() {
                 NestJS + React.
               </p>
             </article>
+          </div>
+        </section>
+      )}
+
+      {activeTab === 'fall_pipeline' && (
+        <section className="panel">
+          <h2>Fall Detection Theory and Pipeline</h2>
+          <p className="hint">
+            This tab explains the binary fall detector separately so the demo can present the full fall workflow,
+            from CSI replay to alert generation, in the same style as the material pipeline.
+          </p>
+
+          <div className="process-flow">
+            <article>
+              <h3>1. CSI Signal Source</h3>
+              <p>
+                We reuse CSI amplitude and phase traces from the same wireless sensing stack, but the target is now
+                binary: fall versus non-fall. The model reads short CSI windows that capture motion-induced channel
+                disturbance rather than object identity.
+              </p>
+            </article>
+            <article>
+              <h3>2. Window Construction and Labeling</h3>
+              <p>
+                Each replayed trial is sliced into windows, normalized with train-only statistics, and labeled by
+                whether a fall event is present. This turns the task into a safety-focused event detector instead of a
+                multi-class classifier.
+              </p>
+            </article>
+            <article>
+              <h3>3. Model Learning</h3>
+              <p>
+                The CNN-BiLSTM learns local CSI patterns and short temporal motion dynamics, then uses sequence
+                context to decide whether the window looks like an ordinary movement or a fall-like trajectory.
+              </p>
+            </article>
+            <article>
+              <h3>4. Alert Decision</h3>
+              <p>
+                The model output is converted into a probability and compared with a threshold. If the score crosses
+                the threshold, the UI raises an alert, which makes the demo easy to interpret for real-time
+                monitoring.
+              </p>
+            </article>
+            <article>
+              <h3>5. Robustness Checks</h3>
+              <p>
+                Random replay measures aggregate accuracy and fall recall, while the scenario simulator tests whether
+                the detector still reacts under noise, attenuation, phase drift, channel dropout, and timing jitter.
+              </p>
+            </article>
+          </div>
+
+          <div className="arch-card">
+            <h3>Fall Detection Flow</h3>
+            <svg viewBox="0 0 920 180" className="arch-svg" role="img" aria-label="Fall detection pipeline flow">
+              <rect x="10" y="40" width="150" height="80" rx="12" className="arch-node" />
+              <text x="85" y="78" textAnchor="middle" className="arch-text">CSI Replay</text>
+              <text x="85" y="98" textAnchor="middle" className="arch-sub">windowed traces</text>
+
+              <rect x="220" y="40" width="170" height="80" rx="12" className="arch-node" />
+              <text x="305" y="78" textAnchor="middle" className="arch-text">Preprocessing</text>
+              <text x="305" y="98" textAnchor="middle" className="arch-sub">normalize + slice</text>
+
+              <rect x="450" y="20" width="200" height="60" rx="12" className="arch-node accent" />
+              <text x="550" y="56" textAnchor="middle" className="arch-text">CNN Feature Stack</text>
+
+              <rect x="450" y="100" width="200" height="60" rx="12" className="arch-node accent2" />
+              <text x="550" y="136" textAnchor="middle" className="arch-text">BiLSTM + Threshold</text>
+
+              <rect x="720" y="40" width="180" height="80" rx="12" className="arch-node" />
+              <text x="810" y="78" textAnchor="middle" className="arch-text">Alert Output</text>
+              <text x="810" y="98" textAnchor="middle" className="arch-sub">fall / no fall</text>
+
+              <line x1="160" y1="80" x2="220" y2="80" className="arch-edge" />
+              <line x1="390" y1="80" x2="450" y2="50" className="arch-edge" />
+              <line x1="390" y1="80" x2="450" y2="130" className="arch-edge" />
+              <line x1="650" y1="50" x2="720" y2="80" className="arch-edge" />
+              <line x1="650" y1="130" x2="720" y2="80" className="arch-edge" />
+            </svg>
+          </div>
+
+          <div className="timeline">
+            <article>
+              <h3>Key Decision Rule</h3>
+              <p>
+                The detector optimizes a binary classification objective and then converts model confidence into an
+                alert decision through a fixed threshold.
+              </p>
+            </article>
+            <article>
+              <h3>Why Fall Recall Matters</h3>
+              <p>
+                In safety monitoring, missing a real fall is more costly than flagging an extra warning, so recall on
+                actual falls is a primary metric alongside accuracy and macro-F1.
+              </p>
+            </article>
+            <article>
+              <h3>Why This Problem Is Harder</h3>
+              <p>
+                Falls are rare, brief, and visually ambiguous in CSI. Normal sit-downs, bends, quick turns, or sudden
+                posture changes can look similar, while true falls vary widely by person, speed, room layout, and
+                signal path. That combination creates class imbalance, label ambiguity, and stronger domain shift than
+                the material task.
+              </p>
+            </article>
+            <article>
+              <h3>Deployment Story</h3>
+              <p>
+                The UI replays stored scenarios, the backend routes the request to the binary fall model, and the
+                Python inference layer returns a probability, an alert flag, and fall-specific metrics for review.
+              </p>
+            </article>
+          </div>
+
+          <div className="result-explainer">
+            <h3>Why This Is Significantly Harder Than Material Detection</h3>
+            <ul>
+              <li>Falls are rare events, so the dataset is naturally imbalanced and the model can overfit to non-fall motion.</li>
+              <li>Many everyday movements produce CSI changes that partially overlap with fall signatures, especially fast sitting or bending.</li>
+              <li>The true signal is short-lived, so the model must catch a narrow temporal pattern instead of a stable object response.</li>
+              <li>Body shape, movement style, room geometry, and channel conditions all change the fall pattern, which weakens generalization.</li>
+              <li>For a safety task, recall is more important than raw accuracy, so the model must avoid missed falls even when that makes the problem harder to tune.</li>
+            </ul>
           </div>
         </section>
       )}
@@ -901,6 +1126,206 @@ function App() {
                       ))}
                     </tbody>
                   </table>
+                </>
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
+      {activeTab === 'fall_detection' && (
+        <section className="panel">
+          <h2>Fall Detection Lab</h2>
+          <div className="demo-script-card">
+            <h3>What This Does</h3>
+            <p>
+              This module detects human falls using the same CSI-based approach as the material recognition task. 
+              It uses the trained gamma-2.5 CNN-BiLSTM model with attention, which achieved ~0.59 test macro-F1.
+            </p>
+            <h3>Two Modes</h3>
+            <ul>
+              <li><strong>Random Replay:</strong> Samples random test cases and shows accuracy, per-sample predictions, and fall probabilities.</li>
+              <li><strong>Scenario Simulator:</strong> Starts with a base sample and applies realistic perturbations (noise, attenuation, phase shift, channel dropout, temporal jitter) to test robustness.</li>
+            </ul>
+          </div>
+
+          <div className="infer-controls">
+            <label>
+              Mode
+              <select value={fallInferMode} onChange={(e) => setFallInferMode(e.target.value)}>
+                <option value="random_replay">Random Replay</option>
+                <option value="simulate">Scenario Simulator</option>
+              </select>
+            </label>
+            {fallInferMode === 'random_replay' && (
+              <label>
+                Sample Count
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={fallInferCount}
+                  onChange={(e) => setFallInferCount(e.target.value)}
+                />
+              </label>
+            )}
+            <button className="run-btn" onClick={runFallInference} disabled={fallInferenceLoading}>
+              {fallInferenceLoading ? 'Running...' : 'Run Fall Detection'}
+            </button>
+          </div>
+
+          {fallInferMode === 'simulate' && (
+            <div className="sim-grid">
+              <label>
+                Base Sample Index
+                <input type="number" min="0" value={fallBaseIndex} onChange={(e) => setFallBaseIndex(e.target.value)} />
+                <small>Test sample index (0-based) for base scenario before perturbation.</small>
+              </label>
+              <label>
+                Noise (Std Dev)
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="0.5"
+                  value={fallNoise}
+                  onChange={(e) => setFallNoise(e.target.value)}
+                />
+                <small>Gaussian noise added to all channels.</small>
+              </label>
+              <label>
+                Phase Offset
+                <input
+                  type="number"
+                  step="0.001"
+                  min="-1"
+                  max="1"
+                  value={fallPhaseOffset}
+                  onChange={(e) => setFallPhaseOffset(e.target.value)}
+                />
+                <small>Uniform phase shift across all subcarriers.</small>
+              </label>
+              <label>
+                Attenuation
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="0.9"
+                  value={fallAttenuation}
+                  onChange={(e) => setFallAttenuation(e.target.value)}
+                />
+                <small>Scales amplitude down (simulates weaker signal or longer distance).</small>
+              </label>
+              <label>
+                Channel Dropout
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="1"
+                  value={fallChannelDropout}
+                  onChange={(e) => setFallChannelDropout(e.target.value)}
+                />
+                <small>Fraction of channels zeroed out.</small>
+              </label>
+              <label>
+                Temporal Jitter
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  max="50"
+                  value={fallTemporalJitter}
+                  onChange={(e) => setFallTemporalJitter(e.target.value)}
+                />
+                <small>Sample-level time shift for temporal misalignment.</small>
+              </label>
+            </div>
+          )}
+
+          {fallInferError && <p className="error-text">{fallInferError}</p>}
+
+          {fallInference && (
+            <div className="infer-results">
+              {fallInferMode === 'random_replay' ? (
+                <>
+                  <p>
+                    <strong>Threshold:</strong> {fallInference.threshold?.toFixed(3)} | 
+                    <strong> Accuracy:</strong> {(fallInference.summary?.accuracy * 100).toFixed(1)}% | 
+                    <strong> Macro-F1:</strong> {fallInference.summary?.macro_f1.toFixed(4)} |
+                    <strong> Fall Recall:</strong> {(fallInference.summary?.fall_recall * 100).toFixed(1)}%
+                    {' '}
+                    ({fallInference.summary?.fall_tp ?? 0}/{fallInference.summary?.fall_actual ?? 0})
+                  </p>
+                  <div className="result-explainer">
+                    <h3>Metrics Explained</h3>
+                    <ul>
+                      <li><strong>Accuracy:</strong> Fraction of correct classifications (fall or non-fall).</li>
+                      <li><strong>Macro-F1:</strong> Harmonic mean of precision and recall, unweighted across classes.</li>
+                      <li><strong>Fall Recall:</strong> Sensitivity for actual falls (true positives / all actual falls).</li>
+                      <li><strong>Alert:</strong> Predicted as fall by the model.</li>
+                    </ul>
+                  </div>
+                  <table className="result-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>True</th>
+                        <th>Predicted</th>
+                        <th>Fall Prob</th>
+                        <th>Alert</th>
+                        <th>Correct</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {fallInference.samples.map((s, idx) => (
+                        <tr key={idx}>
+                          <td>{idx}</td>
+                          <td>{s.true_label}</td>
+                          <td>{s.pred_label}</td>
+                          <td>{(s.fall_probability * 100).toFixed(1)}%</td>
+                          <td>{s.alert ? '🔴 YES' : '🟢 NO'}</td>
+                          <td>{s.correct ? '✓' : '✗'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              ) : (
+                <>
+                  <div className="result-explainer">
+                    <h3>Perturbation Scenario Results</h3>
+                    <ul>
+                      <li><strong>Base:</strong> Original unperturbed CSI sample.</li>
+                      <li><strong>Simulated:</strong> Same sample after applying perturbations.</li>
+                      <li><strong>Delta:</strong> Change in fall probability and whether prediction flipped.</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="sim-results-grid">
+                    <article>
+                      <h3>Base Prediction</h3>
+                      <p><strong>Label:</strong> {fallInference.base?.pred_label}</p>
+                      <p><strong>Fall Prob:</strong> {(fallInference.base?.fall_probability * 100).toFixed(1)}%</p>
+                      <p><strong>Alert:</strong> {fallInference.base?.alert ? '🔴 YES' : '🟢 NO'}</p>
+                      <p><strong>Truth:</strong> {fallInference.base?.true_label}</p>
+                    </article>
+                    
+                    <article>
+                      <h3>After Perturbation</h3>
+                      <p><strong>Label:</strong> {fallInference.simulated?.pred_label}</p>
+                      <p><strong>Fall Prob:</strong> {(fallInference.simulated?.fall_probability * 100).toFixed(1)}%</p>
+                      <p><strong>Alert:</strong> {fallInference.simulated?.alert ? '🔴 YES' : '🟢 NO'}</p>
+                      <p><strong>Confidence:</strong> {(fallInference.simulated?.confidence * 100).toFixed(1)}%</p>
+                    </article>
+                    
+                    <article>
+                      <h3>Impact</h3>
+                      <p><strong>Prob Delta:</strong> {(fallInference.delta?.fall_probability_delta * 100).toFixed(2)}%</p>
+                      <p><strong>Prediction:</strong> {fallInference.delta?.flipped ? '🔄 FLIPPED' : 'Stable'}</p>
+                    </article>
+                  </div>
                 </>
               )}
             </div>

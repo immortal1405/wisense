@@ -19,21 +19,24 @@ export class ShowcaseController {
   inference(
     @Body()
     body: {
+      task?: 'material' | 'fall';
       model?: string;
-      mode?: 'random' | 'manual' | 'csv' | 'simulate';
+      mode?: 'random' | 'manual' | 'csv' | 'simulate' | 'random_replay';
       count?: number;
       amp?: number[];
       phase?: number[];
       csv_text?: string;
       base_index?: number;
       noise?: number;
+      noise_std?: number;
       phase_offset?: number;
       attenuation?: number;
+      channel_dropout?: number;
+      temporal_jitter?: number;
     },
   ) {
-    const model = body?.model ?? 'cnn_bilstm';
-    const mode = body?.mode ?? 'random';
-    const count = body?.count ?? 8;
-    return this.showcaseService.runInference(model, mode, count, body ?? {});
+    const task = body?.task ?? 'material';
+    const mode = body?.mode ?? (task === 'fall' ? 'random_replay' : 'random');
+    return this.showcaseService.runInference(task, mode, body ?? {});
   }
 }
